@@ -4,7 +4,7 @@ from sd.api.qtforpythonuimgrwrapper import QtForPythonUIMgrWrapper
 from sd.api.sdpackagemgr import SDPackageMgr
 from sd.api.sdgraph import SDGraph
 
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtGui import QIcon
 
 from os import path
 
@@ -27,7 +27,7 @@ def onGraphViewCreated(graphViewId: int, uiMgrQt: QtForPythonUIMgrWrapper, pkgMg
     presetToolbar = PresetsFromCSVToolbar(parent=uiMgrQt.getMainWindow(), pkgMgr=pkgMgr, graph=graph)
     getLogger().info("Preset toolbar created:", presetToolbar)
     getLogger().info("Preset toolbar options:", presetToolbar.optionsDialog.csvOptions)
-    toolbarIcon = QIcon(QPixmap(path.join(path.split(__file__)[0], "icons", "substance_designer.png")))
+    toolbarIcon = QIcon(path.join(path.split(__file__)[0], "icons", "substance_designer.png"))
     uiMgrQt.addToolbarToGraphView(graphViewId, presetToolbar, toolbarIcon, UIStr_toolbarToggleTooltip)
     getLogger().info(f"Added toolbar to Graph view (ID={graphViewId})")
 

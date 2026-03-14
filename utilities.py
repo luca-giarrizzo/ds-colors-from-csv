@@ -10,6 +10,8 @@ from sd.api.sdtypefloat4 import SDTypeFloat4
 from sd.api.sdvaluestring import SDValueString
 from sd.api import SDValueColorRGBA, SDValueColorRGB
 
+from PIL import Image as PIL_Image
+from PIL.Image import Image
 import csv
 import logging
 
@@ -93,11 +95,11 @@ def getCSVResourceFilePath(self, package: SDPackage, resourcePkgPath : str) -> s
 
 
 def extractColorsFromCSV(
-        csvFilePath: str, csvOptions: dict[str, Any]) -> list[tuple[str, Any]] | None:
+        csvFilePath: str, csvOptions: dict[str, Any]) -> list[tuple[str, ColorRGB | ColorRGBA]] | None:
   if not (csvOptions["colorValueFormat"] is float or csvOptions["colorValueFormat"] is int):
     getLogger().error("Invalid color value format specified:", str(csvOptions["colorValueFormat"]))
     return None
-  colors: list[tuple[str, Any]] = []
+  colors: list[tuple[str, ColorRGB | ColorRGBA]] = []
   try:
     with open(csvFilePath, "r", encoding="utf-8", newline="") as csvFile:
       csvReader = csv.reader(csvFile, delimiter=",", dialect=csvOptions["csvDialect"])
@@ -131,3 +133,25 @@ def extractColorsFromCSV(
   except Exception as e:
     getLogger().error("ERROR:" + str(e))
     return None
+
+
+def generatePaletteFromColors(
+        colors: list[tuple[str, ColorRGB | ColorRGBA]], size: tuple[int, int] = (256, 1), hasAlpha: bool = False) -> Image:
+
+    if hasAlpha:
+        colorMode = "RGBA"
+        colorsIntValues : list[tuple[int, int, int, int]] = [
+            (int(color[1].r * 255), int(color[1].g * 255), int(color[1].b * 255), int(color[1].a * 255))
+            for color in colors
+        ]
+    else:
+        colorMode = "RGB"
+        colorsIntValues : list[tuple[int, int, int]] = [
+            (int(color[1].r * 255), int(color[1].g * 255), int(color[1].b * 255))
+            for color in colors
+        ]
+
+    paletteImage = PIL_Image.new(colorMode, size)
+    paletteImage.putdata(colorsIntValues)
+
+    return paletteImage

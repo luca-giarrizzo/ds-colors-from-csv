@@ -44,7 +44,7 @@ class PresetsFromCSVToolbar(QToolBar):
         # TODO Handle update of existing presets
         csvFilePath: str = self.presetsFromCSVDialog.csvResourceCombobox.currentData()
         colorInputProp: str = self.presetsFromCSVDialog.graphColorCombobox.currentText()
-        colorsList: list[tuple[str, Any]] | None = extractColorsFromCSV(csvFilePath, self.optionsDialog.csvOptions)
+        colorsList: list[tuple[str, ColorRGB | ColorRGBA]] | None = extractColorsFromCSV(csvFilePath, self.optionsDialog.csvOptions)
 
         if colorsList:
             getLogger().info(f"Found {len(colorsList)} colors: " + ", ".join([color[0] for color in colorsList]))
@@ -326,12 +326,12 @@ class PresetsFromCSVDialog(QDialog):
         self.mainLayout = QVBoxLayout()
         self.setLayout(self.mainLayout)
 
-        self.csvResourceCombobox: QComboBox = self.addCSVResourceOption()
+        self.csvResourceCombobox: QComboBox = self.addCSVResourceCombobox()
         self.graphColorCombobox: QComboBox = self.addGraphColorParametersCombobox()
         self.createPresetsButton: QPushButton = self.addCreatePresetsButton()
         self.refreshComboboxesLists()
 
-    def addCSVResourceOption(self) -> QComboBox:
+    def addCSVResourceCombobox(self) -> QComboBox:
         csvResourceLayout = QtWidgets.QHBoxLayout()
         csvResourceLabel = QtWidgets.QLabel("CSV resource:")
         csvResourceCombobox = QtWidgets.QComboBox()

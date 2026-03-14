@@ -1,5 +1,6 @@
 from PySide6 import QtWidgets, QtGui
-from PySide6.QtWidgets import QToolBar, QDialog, QVBoxLayout, QComboBox, QTextEdit, QCheckBox, QPushButton, QSpinBox
+from PySide6.QtWidgets import QToolBar, QDialog, QVBoxLayout, QComboBox, QTextEdit, \
+                              QCheckBox, QPushButton, QSpinBox, QFrame
 from PySide6.QtCore import Qt, QRect, QPoint
 
 from sd.api import SDResourceBitmap
@@ -247,9 +248,8 @@ class CSVOptionsDialog(QDialog):
         resetToDefaultLayout = QtWidgets.QHBoxLayout()
         resetToDefaultLayout.setAlignment(Qt.AlignmentFlag.AlignRight)
 
-        resetToDefaultButton = QtWidgets.QPushButton("R")
-        resetToDefaultButton.setFixedSize(20, 20)
         resetToDefaultButton = QtWidgets.QPushButton(UIStr_optionsResetButton)
+        resetToDefaultButton.setFixedWidth(100)
         resetToDefaultButton.clicked.connect(self.resetOptions)
 
         resetToDefaultLayout.addStretch()
@@ -338,12 +338,13 @@ class RowSpinBox(QtWidgets.QSpinBox):
 
 
 class PresetsFromCSVDialog(QDialog):
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.setObjectName("presets-from-csv-dialog")
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.Popup)
-        self.setFixedSize(200, 180)
+        self.setFixedSize(200, 200)
 
         self.csvResourcesFilepaths: dict[str, str] = {}
         self.graphColorParameters: dict[str, SDProperty] = {}
@@ -405,6 +406,8 @@ class PresetsFromCSVDialog(QDialog):
                 self.createPresetsButton.setEnabled(True)
 
     def addCreatePresetsSection(self) -> None:
+        separator = layoutSeparator()
+        self.mainLayout.addWidget(separator)
         createPresetsLayout = QtWidgets.QVBoxLayout()
 
         # Title
@@ -424,6 +427,8 @@ class PresetsFromCSVDialog(QDialog):
         self.mainLayout.addLayout(createPresetsLayout)
 
     def addCreatePaletteSection(self) -> None:
+        separator = layoutSeparator()
+        self.mainLayout.addWidget(separator)
         createPaletteLayout = QtWidgets.QVBoxLayout()
 
         # Title
@@ -435,3 +440,11 @@ class PresetsFromCSVDialog(QDialog):
         createPaletteLayout.addWidget(createPaletteButton)
 
         self.mainLayout.addLayout(createPaletteLayout)
+
+
+def layoutSeparator(lineWidth: int = 5) -> QFrame:
+    separator = QFrame()
+    separator.setFrameShape(QFrame.HLine)
+    separator.setFrameShadow(QFrame.Sunken)
+    separator.setLineWidth(lineWidth)
+    return separator

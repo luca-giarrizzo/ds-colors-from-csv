@@ -2,7 +2,11 @@ from PySide6 import QtWidgets, QtGui
 from PySide6.QtWidgets import QToolBar, QDialog, QVBoxLayout, QComboBox, QTextEdit, QCheckBox, QPushButton, QSpinBox
 from PySide6.QtCore import Qt, QRect, QPoint
 
+from sd.api import SDResourceBitmap
+from sd.api.sdresource import EmbedMethod
 from sd.api.sdpackagemgr import SDPackageMgr
+
+from os import path
 
 from .utilities import *
 
@@ -27,10 +31,13 @@ class PresetsFromCSVToolbar(QToolBar):
         self.__pkgMgr = pkgMgr
         self.graph = graph
         self.package = self.graph.getPackage()
+        self.packageDir, self.packageName = path.split(self.package.getFilePath())
+        self.packageResourcesDir = path.join(self.packageDir, path.splitext(self.packageName)[0] + ".resources")
 
         self.optionsDialog = CSVOptionsDialog()
         self.presetsFromCSVDialog = PresetsFromCSVDialog()
         self.presetsFromCSVDialog.createPresetsButton.clicked.connect(self.createPresetsFromCSV)
+        self.presetsFromCSVDialog.createPaletteButton.clicked.connect(self.createPaletteFromCSV)
 
         self.optionsAction = QtGui.QAction("Options", self)
         self.optionsAction.triggered.connect(self.displayOptions)
@@ -52,6 +59,22 @@ class PresetsFromCSVToolbar(QToolBar):
             generatePresetsFromColors(self.graph, colorsList, colorInputProp)
         else:
             getLogger().info("No colors found in CSV.")
+
+    def createPaletteFromCSV(self) -> SDResourceBitmap | None:
+        csvFilePath: str = self.presetsFromCSVDialog.csvResourceCombobox.currentData()
+        colorsList: list[tuple[str, ColorRGB | ColorRGBA]] | None = extractColorsFromCSV(csvFilePath, self.optionsDialog.csvOptions)
+
+        if colorsList:
+            getLogger().info(f"Found {len(colorsList)} colors: " + ", ".join([color[0] for color in colorsList]))
+            getLogger().info("Creating palette bitmap...")
+            paletteImage = generatePaletteFromColors(colorsList)
+            paletteImageFilePath = path.join(self.packageResourcesDir, self.presetsFromCSVDialog.csvResourceCombobox.currentText() + "_palette.png")
+            paletteImage.save(paletteImageFilePath)
+            paletteBitmapResource = SDResourceBitmap.sNewFromFile(self.package, paletteImageFilePath, EmbedMethod.Linked)  # TODO Use 'Resources' folder instead of package root
+            return paletteBitmapResource
+        else:
+            getLogger().info("No colors found in CSV.")
+            return None
 
     def displayOptions(self):
         # zip() function pairs elements by position, sum() adds each pair
@@ -328,8 +351,15 @@ class PresetsFromCSVDialog(QDialog):
 
         self.csvResourceCombobox: QComboBox = self.addCSVResourceCombobox()
         self.graphColorCombobox: QComboBox = self.addGraphColorParametersCombobox()
+
         self.createPresetsButton: QPushButton = self.addCreatePresetsButton()
+        self.createPaletteButton: QPushButton = self.addCreatePaletteButton()
+
+        self.csvResourceCombobox.currentTextChanged.connect(self.refreshButtonStates)
+        self.graphColorCombobox.currentTextChanged.connect(self.refreshButtonStates)
+
         self.refreshComboboxesLists()
+        self.refreshButtonStates()
 
     def addCSVResourceCombobox(self) -> QComboBox:
         csvResourceLayout = QtWidgets.QHBoxLayout()
@@ -369,6 +399,17 @@ class PresetsFromCSVDialog(QDialog):
             self.csvResourceCombobox.addItem(resourceId, userData=resource)
         self.csvResourceCombobox.setCurrentIndex(0)
 
+    def refreshButtonStates(self) -> None:
+        if not self.csvResourceCombobox.currentText():
+            self.createPresetsButton.setEnabled(False)
+            self.createPaletteButton.setEnabled(False)
+        else:
+            self.createPaletteButton.setEnabled(True)
+            if not self.graphColorCombobox.currentText():
+                self.createPresetsButton.setEnabled(False)
+            else:
+                self.createPresetsButton.setEnabled(True)
+
     def addCreatePresetsButton(self) -> QPushButton:
         createPresetsLayout = QtWidgets.QHBoxLayout()
         createPresetsLayout.setAlignment(Qt.AlignmentFlag.AlignRight)
@@ -381,3 +422,16 @@ class PresetsFromCSVDialog(QDialog):
         self.mainLayout.addLayout(createPresetsLayout)
 
         return createPresetsButton
+
+    def addCreatePaletteButton(self) -> QPushButton:
+        createPaletteLayout = QtWidgets.QHBoxLayout()
+        createPaletteLayout.setAlignment(Qt.AlignmentFlag.AlignRight)
+
+        createPaletteButton = QtWidgets.QPushButton("Create palette")
+        createPaletteButton.setFixedSize(20, 20)
+
+        createPaletteLayout.addStretch()
+        createPaletteLayout.addWidget(createPaletteButton)
+        self.mainLayout.addLayout(createPaletteLayout)
+
+        return createPaletteButton

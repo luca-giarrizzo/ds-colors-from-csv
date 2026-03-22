@@ -11,7 +11,7 @@ from os import path
 from functools import partial
 
 from .utilities import getLogger
-from .presetFromCSV import PresetsFromCSVToolbar
+from .csv_processing import PresetsFromCSVToolbar
 from .ui_strings import UIStr_toolbarToggleTooltip
 
 # ---
@@ -26,7 +26,7 @@ def onGraphViewCreated(graphViewId: int, uiMgrQt: QtForPythonUIMgrWrapper, pkgMg
         return
     presetToolbar = PresetsFromCSVToolbar(parent=uiMgrQt.getMainWindow(), pkgMgr=pkgMgr, graph=graph)
     getLogger().info("Preset toolbar created:", presetToolbar)
-    getLogger().info("Preset toolbar options:", presetToolbar.optionsDialog.csvOptions)
+    presetToolbar.csvProcessor.logCurrentOptions()
     toolbarIcon = QIcon(path.join(path.split(__file__)[0], "icons", "substance_designer.png"))
     uiMgrQt.addToolbarToGraphView(graphViewId, presetToolbar, toolbarIcon, UIStr_toolbarToggleTooltip)
     getLogger().info(f"Added toolbar to Graph view (ID={graphViewId})")

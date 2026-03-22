@@ -5,7 +5,7 @@ from sd.api.sdvaluestring import SDValueString
 import csv
 from typing import Any, cast
 
-from utilities import getLogger
+from .utilities import getLogger
 
 # ---
 
@@ -52,6 +52,74 @@ class PaletteColor:
 
     def nameToSDValue(self) -> SDValueString | None:
         return SDValueString.sNew(self.name) if self.name else None
+
+
+class Palette:
+
+    def __init__(self, name: str, paletteColors: list[PaletteColor]):
+        self.name = name
+        self.__colors = {paletteColor.name: paletteColor for paletteColor in paletteColors}
+
+    # GET
+
+    def getColors(self) -> dict[str, PaletteColor]:
+        return self.__colors
+
+    def getColor(self, name: str) -> PaletteColor | None:
+        return self.__colors.get(name)
+
+    def getNames(self) -> set[str]:
+        return set(self.__colors.keys())
+
+    def getRGBValues(self) -> set[tuple[int, int, int]]:
+        return {color.rgbValues for color in self.__colors.values()}
+
+    def getHexCodes(self) -> set[str]:
+        return {color.hex for color in self.__colors.values()}
+
+    def findColorFromRGB(self, rgbValues: tuple[int, int, int]) -> PaletteColor | None:
+        for paletteColor in self.__colors.values():
+            if paletteColor.rgbValues == rgbValues:
+                return paletteColor
+        return None
+
+    def findColorFromHexCode(self, hexCode: str) -> PaletteColor | None:
+        for paletteColor in self.__colors.values():
+            if paletteColor.hex == hexCode:
+                return paletteColor
+        return None
+
+    def length(self) -> int:
+        return len(self.__colors)
+
+    # EDIT
+
+    def add(self, color: PaletteColor) -> bool:
+        if not color.name in self.__colors:
+            self.__colors[color.name] = color
+            return True
+        else:
+            return False
+
+    def update(self, colorName: str, newColor: PaletteColor) -> bool:
+        if colorName in self.__colors:
+            self.__colors[colorName] = newColor
+            return True
+        else:
+            return False
+
+    def delete(self, colorName: str) -> bool:
+        if colorName in self.__colors:
+            self.__colors.pop(colorName)
+            return True
+        else:
+            return False
+
+    def rename(self, newName: str) -> None:
+        self.name = newName
+
+    def clear(self):
+        self.__colors.clear()
 
 # ---
 

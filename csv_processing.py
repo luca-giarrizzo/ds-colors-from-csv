@@ -1,3 +1,7 @@
+from typing import Any
+from os import path
+import csv
+
 from PySide6 import QtWidgets, QtGui
 from PySide6.QtWidgets import QToolBar, QDialog, QVBoxLayout, QComboBox, QTextEdit, \
                               QCheckBox, QPushButton, QSpinBox, QFrame
@@ -7,14 +11,13 @@ from sd.api import SDResourceBitmap
 from sd.api.sdresource import EmbedMethod
 from sd.api.sdpackagemgr import SDPackageMgr
 
-from os import path
-
 from .utilities import *
 from .ui_strings import *
+from .palette import Palette, PaletteColor
 
 # ---
 
-class PresetsFromCSVToolbar(QToolBar):
+class CSVColorProcessor:
 
     CSV_OPTIONS_DEFAULTS: dict[str, Any] = {
         "csvDialect": "excel",
@@ -27,6 +30,116 @@ class PresetsFromCSVToolbar(QToolBar):
         "hasHeader": True
     }
 
+    def __init__(self):
+        self.__options: dict[str, Any] = CSVColorProcessor.CSV_OPTIONS_DEFAULTS
+
+    def getOption(self, identifier: str) -> Any | None:
+        if identifier in CSVColorProcessor.CSV_OPTIONS_DEFAULTS:
+            return self.__options[identifier]
+        else:
+            getLogger().error(f"Option not found: {identifier}")
+            return None
+
+    def getAllOptions(self) -> dict[str, Any]:
+        return self.__options
+
+    def setOption(self, identifier: str, value: Any) -> bool:
+        if identifier in CSVColorProcessor.CSV_OPTIONS_DEFAULTS:
+            if isinstance(value, CSVColorProcessor.CSV_OPTIONS_DEFAULTS[identifier].__class__):
+                self.__options[identifier] = value
+                return True
+            else:
+                getLogger().error(
+                    f"Value is of wrong type: {value.__class__} \
+                    (Expected: {CSVColorProcessor.CSV_OPTIONS_DEFAULTS[identifier].__class__})")
+                return False
+        else:
+            getLogger().error(f"Option not found: {identifier}")
+            return False
+
+    def resetOption(self, identifier: str) -> bool:
+        if identifier in CSVColorProcessor.CSV_OPTIONS_DEFAULTS:
+            self.__options[identifier] = CSVColorProcessor.CSV_OPTIONS_DEFAULTS[identifier]
+            return True
+        else:
+            getLogger().error(f"Option not found: {identifier}")
+            return False
+
+    def resetAllOptions(self) -> None:
+        self.__options = {key: value for key, value in CSVColorProcessor.CSV_OPTIONS_DEFAULTS.items()}
+
+    def logCurrentOptions(self):
+        optionsPrettyPrint = "\n".join(
+            [f"  - {key}: {value}" for key, value in self.__options.items()])
+        getLogger().info(f"Current options:\n{optionsPrettyPrint}")
+
+    def extractPalette(self, filepath: str) -> Palette | None:
+        try:
+            with open(filepath, "r", encoding="utf-8", newline="") as csvFile:
+                csvReader = csv.reader(csvFile, delimiter=",", dialect=self.__options["csvDialect"])
+                csvValues = [row for row in csvReader]
+        except Exception as e:
+            getLogger().error("ERROR:" + str(e))
+            return None
+
+        paletteColors: list[PaletteColor] = []
+
+        if self.__options["hasHeader"]:
+            csvValues = csvValues[1:]  # Skip header row
+
+        for rowIndex, rowCells in enumerate(csvValues):
+            colorValueList: list[int] = []
+            if "," in self.__options["colorRow"]:
+                colorColumns = self.__options["colorRow"].split(",")
+                if len(colorColumns) == 3:
+                    for columnIndex in colorColumns:
+                        if columnIndex.isdigit() and columnIndex < len(rowCells):
+                            cellValue = rowCells[columnIndex]
+                            if cellValue.isdigit():
+                                colorValueList.append(int(cellValue))
+                            else:
+                                getLogger().error(
+                                    f"Invalid color value in cell ({rowIndex}, {columnIndex}): {cellValue}")
+                        else:
+                            getLogger().error(f"Invalid column index: {columnIndex}")
+                            return None
+                else:
+                    getLogger().error(f"Invalid amount of columns: {len(colorColumns)}. Specify 3 columns for RGB.")
+            else:
+                columnIndex = self.__options["colorRow"]
+                if columnIndex.isdigit() and int(columnIndex) < len(rowCells):
+                    cellValues: list[str] = rowCells[int(self.__options["colorRow"])].split(self.__options["colorSeparator"])
+                    if len(cellValues) == 3:
+                        for cellValue in cellValues:
+                            if cellValue.isdigit():
+                                colorValueList.append(int(cellValue))
+                            else:
+                                getLogger().error(
+                                    f"Invalid color value in cell ({rowIndex}, {columnIndex}): {cellValue}")
+                                return None
+                    else:
+                        getLogger().error(f"Invalid amount of values: {len(cellValues)}. Specify 3 values for RGB.")
+                        return None
+                else:
+                    getLogger().error(f"Invalid column index: {columnIndex}")
+                    return None
+
+            rgbValues: tuple[int, int, int] = tuple(*colorValueList)
+
+            if self.__options["hasLabel"] and self.__options["labelRow"].isdigit():
+                colorName = rowCells[int(self.__options["labelRow"])]
+            else:
+                colorName = None
+
+            paletteColors.append(PaletteColor(rgbValues=rgbValues, name=colorName))
+
+        return Palette(name=path.splitext(path.basename(filepath))[0], paletteColors=paletteColors)
+
+
+# ---
+
+class PresetsFromCSVToolbar(QToolBar):
+
     def __init__(self, parent, pkgMgr: SDPackageMgr, graph: SDSBSCompGraph):
         super().__init__(parent=parent)
         self.setObjectName("PresetsFromCSVToolbar")
@@ -36,10 +149,12 @@ class PresetsFromCSVToolbar(QToolBar):
         self.packageDir, self.packageName = path.split(self.package.getFilePath())
         self.packageResourcesDir = path.join(self.packageDir, path.splitext(self.packageName)[0] + ".resources")
 
-        self.optionsDialog = CSVOptionsDialog()
+        self.csvProcessor = CSVColorProcessor()
+
+        self.optionsDialog = CSVOptionsDialog(self.csvProcessor)
         self.presetsFromCSVDialog = PresetsFromCSVDialog()
         self.presetsFromCSVDialog.createPresetsButton.clicked.connect(self.createPresetsFromCSV)
-        self.presetsFromCSVDialog.createPaletteButton.clicked.connect(self.createPaletteFromCSV)
+        self.presetsFromCSVDialog.createPaletteButton.clicked.connect(self.createPaletteBitmapFromCSV)
 
         self.optionsAction = QtGui.QAction("Options", self)
         self.optionsAction.triggered.connect(self.displayOptions)
@@ -50,27 +165,40 @@ class PresetsFromCSVToolbar(QToolBar):
         self.addAction(self.createPresetsAction)
 
     def createPresetsFromCSV(self) -> None:
+
+        def generatePresetsFromColors(
+                graph: SDSBSCompGraph, palette: Palette | None, graphInputIdentifier: str) -> None:
+            if not palette:
+                getLogger().warning("No colors to generate presets from.")
+                return None
+            for colorName, color in palette.getColors().items():
+                getLogger().info("Generating presets for color: " + colorName)
+                preset = graph.newPreset(colorName)
+                preset.addInput(graphInputIdentifier, color.colorToSDValueRGB())
+                getLogger().info(f"Generated preset: {colorName} - {color.rgbValues}")
+
         # TODO Handle update of existing presets
         csvFilePath: str = self.presetsFromCSVDialog.csvResourceCombobox.currentData()
         colorInputProp: str = self.presetsFromCSVDialog.graphColorCombobox.currentText()
-        colorsList: list[tuple[str, ColorRGB | ColorRGBA]] | None = extractColorsFromCSV(csvFilePath, self.optionsDialog.csvOptions)
+        palette: Palette | None = self.csvProcessor.extractPalette(csvFilePath)
 
-        if colorsList:
-            getLogger().info(f"Found {len(colorsList)} colors: " + ", ".join([color[0] for color in colorsList]))
+        if palette:
+            getLogger().info(f"Found {palette.length()} colors: " + ", ".join(palette.getNames()))
             getLogger().info("Creating presets...")
-            generatePresetsFromColors(self.graph, colorsList, colorInputProp)
+            generatePresetsFromColors(self.graph, palette, colorInputProp)
         else:
             getLogger().info("No colors found in CSV.")
 
-    def createPaletteFromCSV(self) -> SDResourceBitmap | None:
+    def createPaletteBitmapFromCSV(self) -> SDResourceBitmap | None:
         csvFilePath: str = self.presetsFromCSVDialog.csvResourceCombobox.currentData()
-        colorsList: list[tuple[str, ColorRGB | ColorRGBA]] | None = extractColorsFromCSV(csvFilePath, self.optionsDialog.csvOptions)
+        palette: Palette | None = self.csvProcessor.extractPalette(csvFilePath)
 
-        if colorsList:
-            getLogger().info(f"Found {len(colorsList)} colors: " + ", ".join([color[0] for color in colorsList]))
+        if palette:
+            getLogger().info(f"Found {palette.length()} colors: " + ", ".join(palette.getNames()))
             getLogger().info("Creating palette bitmap...")
-            paletteImage = generatePaletteFromColors(colorsList)
-            paletteImageFilePath = path.join(self.packageResourcesDir, self.presetsFromCSVDialog.csvResourceCombobox.currentText() + "_palette.png")
+            paletteImage = generatePaletteImageFromColors(list(palette.getRGBValues()))
+            paletteImageFilePath = path.join(
+                self.packageResourcesDir, self.presetsFromCSVDialog.csvResourceCombobox.currentText() + "_palette.png")
             paletteImage.save(paletteImageFilePath)
             paletteBitmapResource = SDResourceBitmap.sNewFromFile(self.package, paletteImageFilePath, EmbedMethod.Linked)  # TODO Use 'Resources' folder instead of package root
             return paletteBitmapResource
@@ -91,8 +219,7 @@ class PresetsFromCSVToolbar(QToolBar):
         self.position = tuple(map(sum, zip(self.mapToGlobal(QPoint(0, 0)).toTuple(), (0, self.size().height()))))
 
         self.presetsFromCSVDialog.csvResourcesFilepaths = gatherCSVResourcesPathsInPackage(self.package)
-        self.presetsFromCSVDialog.graphColorParameters = gatherGraphColorParameters(
-            self.graph, hasAlpha=self.optionsDialog.csvOptions["hasAlpha"])
+        self.presetsFromCSVDialog.graphColorParameters = gatherGraphColorParameters(self.graph)
         self.presetsFromCSVDialog.refreshComboboxesLists()
 
         self.presetsFromCSVDialog.createPresetsButton.setEnabled(
@@ -103,10 +230,10 @@ class PresetsFromCSVToolbar(QToolBar):
 
 
 class CSVOptionsDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, csvProcessor: CSVColorProcessor, parent=None):
         super().__init__(parent)
 
-        self.csvOptions: dict[str, Any] = {key: value for key, value in PresetsFromCSVToolbar.CSV_OPTIONS_DEFAULTS.items()}
+        self.csvProcessor = csvProcessor
 
         self.setObjectName("csv-options-dialog")
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.Popup)
@@ -129,7 +256,7 @@ class CSVOptionsDialog(QDialog):
         colorRowLayout = QtWidgets.QHBoxLayout()
         colorRowLabel = QtWidgets.QLabel(UIStr_colorRowLabel)
 
-        colorRow = RowSpinBox(presetDialog=self, optionIdentifier="colorRow", parent=self)
+        colorRow = RowSpinBox(optionsDialog=self, optionIdentifier="colorRow", parent=self)
 
         colorRowLayout.addWidget(colorRowLabel)
         colorRowLayout.addWidget(colorRow)
@@ -142,8 +269,7 @@ class CSVOptionsDialog(QDialog):
         colorSeparatorLabel = QtWidgets.QLabel(UIStr_colorSeparatorLabel)
 
         colorSeparator = OptionTextEdit(
-            presetDialog=self, optionIdentifier="colorSeparator", parent=self)
-
+            optionsDialog=self, optionIdentifier="colorSeparator", parent=self)
 
         colorSeparatorLayout.addWidget(colorSeparatorLabel)
         colorSeparatorLayout.addWidget(colorSeparator)
@@ -160,8 +286,8 @@ class CSVOptionsDialog(QDialog):
         colorValueFormat.addItem("Integer", userData=int)
 
         colorValueFormat.currentIndexChanged.connect(
-            lambda: self.updateOptions(key="colorValueFormat", value=colorValueFormat.itemData(colorValueFormat.currentIndex())))
-        colorValueFormat.setCurrentIndex(colorValueFormat.findData(self.csvOptions["colorValueFormat"]))  # Initialise default value
+            lambda: self.csvProcessor.setOption("colorValueFormat", colorValueFormat.itemData(colorValueFormat.currentIndex())))
+        colorValueFormat.setCurrentIndex(colorValueFormat.findData(self.csvProcessor.getOption("colorValueFormat")))  # Initialise default value
 
         colorValueFormatLayout.addWidget(colorValueFormatLabel)
         colorValueFormatLayout.addWidget(colorValueFormat)
@@ -174,8 +300,8 @@ class CSVOptionsDialog(QDialog):
         hasAlphaLabel = QtWidgets.QLabel(UIStr_hasAlphaLabel)
 
         hasAlpha = QtWidgets.QCheckBox()
-        hasAlpha.toggled.connect(lambda: self.updateOptions("hasAlpha", hasAlpha.isChecked()))
-        hasAlpha.setChecked(self.csvOptions["hasAlpha"])  # Initialise default value
+        hasAlpha.toggled.connect(lambda: self.csvProcessor.setOption("hasAlpha", hasAlpha.isChecked()))
+        hasAlpha.setChecked(self.csvProcessor.getOption("hasAlpha"))  # Initialise default value
 
         hasAlphaLayout.addWidget(hasAlphaLabel)
         hasAlphaLayout.addWidget(hasAlpha)
@@ -188,9 +314,9 @@ class CSVOptionsDialog(QDialog):
         hasLabelLabel = QtWidgets.QLabel(UIStr_hasLabelLabel)
 
         hasLabel = QtWidgets.QCheckBox()
-        hasLabel.toggled.connect(lambda: self.updateOptions("hasLabel", hasLabel.isChecked()))
+        hasLabel.toggled.connect(lambda: self.csvProcessor.setOption("hasLabel", hasLabel.isChecked()))
         hasLabel.toggled.connect(lambda: self.labelRowOption.setEnabled(hasLabel.isChecked()))
-        hasLabel.setChecked(self.csvOptions["hasLabel"])
+        hasLabel.setChecked(self.csvProcessor.getOption("hasLabel"))
 
         hasLabelLayout.addWidget(hasLabelLabel)
         hasLabelLayout.addWidget(hasLabel)
@@ -203,8 +329,8 @@ class CSVOptionsDialog(QDialog):
         hasHeaderLabel = QtWidgets.QLabel(UIStr_hasHeaderLabel)
 
         hasHeader = QtWidgets.QCheckBox()
-        hasHeader.toggled.connect(lambda: self.updateOptions("hasHeader", hasHeader.isChecked()))
-        hasHeader.setChecked(self.csvOptions["hasHeader"])  # Initialise default value
+        hasHeader.toggled.connect(lambda: self.csvProcessor.setOption("hasHeader", hasHeader.isChecked()))
+        hasHeader.setChecked(self.csvProcessor.getOption("hasHeader"))  # Initialise default value
 
         hasHeaderLayout.addWidget(hasHeaderLabel)
         hasHeaderLayout.addWidget(hasHeader)
@@ -217,7 +343,7 @@ class CSVOptionsDialog(QDialog):
         labelRowLayout = QtWidgets.QHBoxLayout()
         labelRowLabel = QtWidgets.QLabel(UIStr_labelRowLabel)
 
-        labelRow = RowSpinBox(presetDialog=self, optionIdentifier="labelRow", parent=self)
+        labelRow = RowSpinBox(optionsDialog=self, optionIdentifier="labelRow", parent=self)
 
         labelRowLayout.addWidget(labelRowLabel)
         labelRowLayout.addWidget(labelRow)
@@ -235,8 +361,8 @@ class CSVOptionsDialog(QDialog):
         csvDialect.addItem("Unix", userData="unix")
 
         csvDialect.currentIndexChanged.connect(
-            lambda: self.updateOptions(key="csvDialect", value=csvDialect.itemData(csvDialect.currentIndex())))
-        csvDialect.setCurrentIndex(csvDialect.findData(self.csvOptions["csvDialect"]))  # Initialise default value
+            lambda: self.csvProcessor.setOption("csvDialect", csvDialect.itemData(csvDialect.currentIndex())))
+        csvDialect.setCurrentIndex(csvDialect.findData(self.csvProcessor.getOption("csvDialect")))  # Initialise default value
 
         csvDialectLayout.addWidget(csvDialectLabel)
         csvDialectLayout.addWidget(csvDialect)
@@ -259,57 +385,53 @@ class CSVOptionsDialog(QDialog):
         return resetToDefaultButton
 
     def resetOptions(self) -> None:
-        self.csvDialectOption.setCurrentIndex(self.csvDialectOption.findData(
-            PresetsFromCSVToolbar.CSV_OPTIONS_DEFAULTS["csvDialect"]))
-        self.hasLabelOption.setChecked(
-            PresetsFromCSVToolbar.CSV_OPTIONS_DEFAULTS["hasLabel"])
-        self.labelRowOption.setValue(
-            PresetsFromCSVToolbar.CSV_OPTIONS_DEFAULTS["labelRow"])
-        self.colorRowOption.setValue(
-            PresetsFromCSVToolbar.CSV_OPTIONS_DEFAULTS["colorRow"])
-        self.colorSeparatorOption.setText(
-            PresetsFromCSVToolbar.CSV_OPTIONS_DEFAULTS["colorSeparator"])
-        self.colorValueFormatOption.setCurrentIndex(self.colorValueFormatOption.findData(
-            PresetsFromCSVToolbar.CSV_OPTIONS_DEFAULTS["colorValueFormat"]))
-        self.hasHeaderOption.setChecked(
-            PresetsFromCSVToolbar.CSV_OPTIONS_DEFAULTS["hasHeader"])
-        self.hasAlphaOption.setChecked(
-            PresetsFromCSVToolbar.CSV_OPTIONS_DEFAULTS["hasAlpha"])
+        self.csvProcessor.resetAllOptions()
 
-        self.csvOptions = {key: value for key, value in PresetsFromCSVToolbar.CSV_OPTIONS_DEFAULTS.items()}
+        self.csvDialectOption.setCurrentIndex(self.csvDialectOption.findData(
+            self.csvProcessor.getOption("csvDialect")))
+        self.hasLabelOption.setChecked(
+            self.csvProcessor.getOption("hasLabel"))
+        self.labelRowOption.setValue(
+            self.csvProcessor.getOption("labelRow"))
+        self.colorRowOption.setValue(
+            self.csvProcessor.getOption("colorRow"))
+        self.colorSeparatorOption.setText(
+            self.csvProcessor.getOption("colorSeparator"))
+        self.colorValueFormatOption.setCurrentIndex(self.colorValueFormatOption.findData(
+            self.csvProcessor.getOption("colorValueFormat")))
+        self.hasHeaderOption.setChecked(
+            self.csvProcessor.getOption("hasHeader"))
+        self.hasAlphaOption.setChecked(
+            self.csvProcessor.getOption("hasAlpha"))
 
         getLogger().info("CSV options have been reset.")
-        self.__logCurrentOptions()
+        self.csvProcessor.logCurrentOptions()
 
     def updateOptions(self, key: str, value: Any) -> None:
-        self.csvOptions[key] = value
+        self.csvProcessor.setOption(key, value)
         getLogger().info(f"Updated option {key}: {value}")
-        self.__logCurrentOptions()
+        self.csvProcessor.logCurrentOptions()
 
-    def __logCurrentOptions(self):
-        optionsPrettyPrint = "\n".join([f"  - {key}: {value}" for key, value in self.csvOptions.items()])
-        getLogger().info(f"Current options:\n{optionsPrettyPrint}")
 
 class OptionTextEdit(QtWidgets.QTextEdit):
     def __init__(
-            self, presetDialog: CSVOptionsDialog, optionIdentifier: str, parent=None):
+            self, optionsDialog: CSVOptionsDialog, optionIdentifier: str, parent=None):
         super().__init__(parent)
         self.setFixedHeight(self.fontMetrics().height())  # Set height to fit a single line of text
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
-        self.presetDialog = presetDialog
+        self.optionsDialog = optionsDialog
         self.optionIdentifier = optionIdentifier
 
-        self.setText(presetDialog.csvOptions[optionIdentifier])  # Initialise default value
+        self.setText(optionsDialog.csvProcessor.getOption(optionIdentifier))  # Initialise value
 
     def focusOutEvent(self, e):
         # TODO Add visual feedback for invalid input (e.g. red border) without losing focus
         plainText = self.toPlainText()
         if plainText:
-            self.presetDialog.updateOptions(self.optionIdentifier, plainText)
+            self.optionsDialog.csvProcessor.setOption(self.optionIdentifier, plainText)
         else:  # Set option value to default if text is empty
-            self.presetDialog.updateOptions(
-                self.optionIdentifier, PresetsFromCSVToolbar.CSV_OPTIONS_DEFAULTS[self.optionIdentifier])
+            self.optionsDialog.csvProcessor.resetOption(self.optionIdentifier)
         super().focusOutEvent(e)
 
     def keyPressEvent(self, e):
@@ -321,19 +443,18 @@ class OptionTextEdit(QtWidgets.QTextEdit):
 
 
 class RowSpinBox(QtWidgets.QSpinBox):
-    def __init__(self, presetDialog: CSVOptionsDialog, optionIdentifier: str, parent=None):
+    def __init__(self, optionsDialog: CSVOptionsDialog, optionIdentifier: str, parent=None):
         super().__init__(parent)
         self.setSingleStep(1)
         self.setMinimum(0)
 
-        self.presetDialog = presetDialog
+        self.presetDialog = optionsDialog
         self.optionIdentifier = optionIdentifier
 
-        self.setValue(presetDialog.csvOptions[optionIdentifier])  # Initialise default value
+        self.setValue(optionsDialog.csvProcessor.getOption(optionIdentifier))  # Initialise default value
 
     def focusOutEvent(self, e):
-        self.presetDialog.updateOptions(
-            self.optionIdentifier, self.value())
+        self.presetDialog.csvProcessor.setOption(self.optionIdentifier, self.value())
         super().focusOutEvent(e)
 
 

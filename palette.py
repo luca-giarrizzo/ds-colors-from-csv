@@ -56,9 +56,9 @@ class PaletteColor:
 
 class Palette:
 
-    def __init__(self, name: str, paletteColors: list[PaletteColor]):
+    def __init__(self, name: str, paletteColors: list[PaletteColor] | None = None):
         self.name = name
-        self.__colors = {paletteColor.name: paletteColor for paletteColor in paletteColors}
+        self.__colors = {paletteColor.name: paletteColor for paletteColor in paletteColors} if paletteColors else {}
 
     # GET
 

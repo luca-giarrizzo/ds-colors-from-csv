@@ -11,7 +11,7 @@ from os import path
 from functools import partial
 
 from .utilities import getLogger
-from .csv_processing import PresetsFromCSVToolbar
+from .ui import PresetsFromCSVToolbar
 from .ui_strings import UIStr_toolbarToggleTooltip
 
 # ---

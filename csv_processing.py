@@ -5,6 +5,7 @@ from typing import Any
 from .palette import Palette, PaletteColor
 from .utilities import getLogger
 
+# ---
 
 class CSVColorProcessor:
 

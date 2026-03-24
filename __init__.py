@@ -31,6 +31,7 @@ def onGraphViewCreated(graphViewId: int, uiMgrQt: QtForPythonUIMgrWrapper, pkgMg
     uiMgrQt.addToolbarToGraphView(graphViewId, presetToolbar, toolbarIcon, UIStr_toolbarToggleTooltip)
     getLogger().info(f"Added toolbar to Graph view (ID={graphViewId})")
 
+
 def initializeSDPlugin():
     global CALLBACK_IDS
 
@@ -42,6 +43,7 @@ def initializeSDPlugin():
 
     callbackId = uiMgrQt.registerGraphViewCreatedCallback(partial(onGraphViewCreated, uiMgrQt=uiMgrQt, pkgMgr=pkgMgr))
     CALLBACK_IDS.append(callbackId)
+
 
 def uninitializeSDPlugin():
     global CALLBACK_IDS

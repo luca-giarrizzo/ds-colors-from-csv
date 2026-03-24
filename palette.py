@@ -145,6 +145,7 @@ def intToHex(intValue: int) -> str | None:
     else:
         return None
 
+
 def hexToInt(hexValue: str) -> int | None:
     if hexValue.isdigit() and int(hexValue) < 10:
         return int(hexValue)
@@ -163,6 +164,7 @@ def hexToInt(hexValue: str) -> int | None:
     else:
         return None
 
+
 def RGBToHex(rgbValues: tuple[int, int, int]) -> str:
     hexCode = "#"
     for channel in rgbValues:
@@ -170,6 +172,7 @@ def RGBToHex(rgbValues: tuple[int, int, int]) -> str:
         channelHex = intToHex(channelIntDiv) + intToHex(channel - channelIntDiv * 16)
         hexCode += channelHex
     return hexCode
+
 
 def hexToRGB(hexCode: str) -> tuple[int, int, int]:
     hexCode = hexCode[1:]
@@ -179,6 +182,7 @@ def hexToRGB(hexCode: str) -> tuple[int, int, int]:
         hexToInt(hexCode[4]) * 16 + hexToInt(hexCode[5])
     )
 
+
 def validateHexCode(hexCode: str) -> bool:
     if hexCode.startswith("#"):
         for character in hexCode[1:]:
@@ -187,6 +191,7 @@ def validateHexCode(hexCode: str) -> bool:
     else:
         return False
     return True
+
 
 def clampRGBValue(rgbValues: tuple[int, int, int]) -> tuple[int, int, int]:
     """
@@ -199,6 +204,7 @@ def clampRGBValue(rgbValues: tuple[int, int, int]) -> tuple[int, int, int]:
         min(255, max(0, rgbValues[1])),
         min(255, max(0, rgbValues[2]))
     )
+
 
 def extractColorsFromCSV(csvFilePath: str, csvOptions: dict[str, Any]) -> dict[str, PaletteColor] | None:
     colors: dict[str, PaletteColor] = {}
@@ -255,7 +261,6 @@ def extractColorsFromCSV(csvFilePath: str, csvOptions: dict[str, Any]) -> dict[s
         colors[label] = PaletteColor(rgbValues=colorValues, name=label)
 
     return colors
-
 
 # ---
 

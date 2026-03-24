@@ -5,7 +5,7 @@ from sd.api.sdvaluestring import SDValueString
 import csv
 from typing import Any, cast
 
-from .utilities import getLogger
+from utilities import getLogger
 
 # ---
 

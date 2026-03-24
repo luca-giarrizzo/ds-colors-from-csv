@@ -10,9 +10,9 @@ from os import path
 
 from functools import partial
 
-from .utilities import getLogger
-from .ui import PresetsFromCSVToolbar
-from .ui_strings import UIStr_toolbarToggleTooltip
+from utilities import getLogger
+from ui import PresetsFromCSVToolbar
+from ui_strings import UIStr_toolbarToggleTooltip
 
 # ---
 

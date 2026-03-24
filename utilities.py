@@ -21,7 +21,7 @@ def getLogger():
     global __gLogger
     if not __gLogger:
             __gLogger = logging.getLogger("PresetsFromCSV")
-            __gLogger.addHandler(sd.getContext().createRuntimeLogHandler())
+            # __gLogger.addHandler(sd.getContext().createRuntimeLogHandler())
             __gLogger.propagate = False
             __gLogger.setLevel(logging.DEBUG)
     return __gLogger

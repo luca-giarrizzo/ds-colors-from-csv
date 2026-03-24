@@ -2,8 +2,8 @@ import csv
 from os import path
 from typing import Any
 
-from .palette import Palette, PaletteColor
-from .utilities import getLogger
+from palette import Palette, PaletteColor
+from utilities import getLogger
 
 # ---
 

@@ -11,9 +11,9 @@ from sd.api.sdresource import EmbedMethod
 from sd.api.sdpackagemgr import SDPackageMgr
 
 from csv_processing import CSVColorProcessor
-from .utilities import *
-from .ui_strings import *
-from .palette import Palette
+from utilities import *
+from ui_strings import *
+from palette import Palette
 
 
 # ---

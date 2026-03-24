@@ -79,47 +79,51 @@ class CSVColorProcessor:
 
         for rowIndex, rowCells in enumerate(csvValues):
             colorValueList: list[int] = []
-            if "," in self.__options["colorRow"]:
-                colorColumns = self.__options["colorRow"].split(",")
+            columnIndex = self.__options["colorRow"]
+            if isinstance(columnIndex, str) and "," in columnIndex:
+                colorColumns = columnIndex.split(",")
                 if len(colorColumns) == 3:
-                    for columnIndex in colorColumns:
-                        if columnIndex.isdigit() and columnIndex < len(rowCells):
-                            cellValue = rowCells[columnIndex]
+                    for column in colorColumns:
+                        if column.isdigit() and column < len(rowCells):
+                            cellValue = rowCells[column]
                             if cellValue.isdigit():
                                 colorValueList.append(int(cellValue))
                             else:
                                 getLogger().error(
-                                    f"Invalid color value in cell ({rowIndex}, {columnIndex}): {cellValue}")
+                                    f"Invalid color value in cell ({rowIndex}, {column}): {cellValue}")
                         else:
-                            getLogger().error(f"Invalid column index: {columnIndex}")
+                            getLogger().error(f"Invalid column index: {column}")
                             return None
                 else:
                     getLogger().error(f"Invalid amount of columns: {len(colorColumns)}. Specify 3 columns for RGB.")
-            else:
-                columnIndex = self.__options["colorRow"]
-                if columnIndex.isdigit() and int(columnIndex) < len(rowCells):
-                    cellValues: list[str] = rowCells[int(self.__options["colorRow"])].split(self.__options["colorSeparator"])
-                    if len(cellValues) == 3:
-                        for cellValue in cellValues:
-                            if cellValue.isdigit():
-                                colorValueList.append(int(cellValue))
-                            else:
-                                getLogger().error(
-                                    f"Invalid color value in cell ({rowIndex}, {columnIndex}): {cellValue}")
-                                return None
-                    else:
-                        getLogger().error(f"Invalid amount of values: {len(cellValues)}. Specify 3 values for RGB.")
-                        return None
+            elif isinstance(columnIndex, int) and columnIndex < len(rowCells):
+                cellValues: list[str] = rowCells[int(self.__options["colorRow"])].split(self.__options["colorSeparator"])
+                if len(cellValues) == 3:
+                    for cellValue in cellValues:
+                        if cellValue.isdigit():
+                            colorValueList.append(int(cellValue))
+                        else:
+                            getLogger().error(
+                                f"Invalid color value in cell ({rowIndex}, {columnIndex}): {cellValue}")
+                            return None
                 else:
-                    getLogger().error(f"Invalid column index: {columnIndex}")
+                    getLogger().error(f"Invalid amount of values: {len(cellValues)}. Specify 3 values for RGB.")
                     return None
-
-            rgbValues: tuple[int, int, int] = tuple(*colorValueList)
-
-            if self.__options["hasLabel"] and self.__options["labelRow"].isdigit():
-                colorName = rowCells[int(self.__options["labelRow"])]
             else:
-                colorName = None
+                getLogger().error(f"Invalid column index: {columnIndex}")
+                return None
+
+            rgbValues: tuple[int, int, int] = tuple(colorValueList)
+
+            colorName = None
+            if self.__options["hasLabel"]:
+                if isinstance(self.__options["labelRow"], int):
+                    if self.__options["labelRow"] > len(rowCells):
+                        colorName = rowCells[int(self.__options["labelRow"])]
+                    else:
+                        getLogger().error(f"Label row is out of range: {self.__options["labelRow"]}")
+                else:
+                    getLogger().error(f"Invalid label row type: {self.__options["labelRow"].__class__}")
 
             paletteColors.append(PaletteColor(rgbValues=rgbValues, name=colorName))
 

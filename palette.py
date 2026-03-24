@@ -16,19 +16,22 @@ class PaletteColor:
     def __init__(
         self, rgbValues: tuple[int, int, int] | None = None, hexCode: str | None = None, name: str | None = None):
 
-        if rgbValues and hexCode:
+        self.rgbValues = rgbValues
+        self.hex = hexCode
+        self.name = name
+
+        if self.rgbValues and self.hex:
             getLogger().warning("Both RGB values and hex code provided. Hex code will be ignored.")
 
-        if rgbValues:
-            self.rgbValues = clampRGBValue(rgbValues)  # RGB Values are clamped to [0, 255] range.
+        if self.rgbValues:
+            self.rgbValues = clampRGBValue(self.rgbValues)  # RGB Values are clamped to [0, 255] range.
             self.hex = RGBToHex(self.rgbValues)
-        elif hexCode:
-            hexCode = hexCode.upper()  # Hex code may be lowercase
-            if validateHexCode(hexCode):
-                self.hex = hexCode
+        elif self.hex:
+            self.hex = self.hex.upper()  # Hex code may be lowercase
+            if validateHexCode(self.hex):
                 self.rgbValues = hexToRGB(self.hex)
             else:
-                getLogger().error(f"Invalid hex code: {hexCode}")
+                getLogger().error(f"Invalid hex code: {self.hex}")
                 self.hex = None
                 self.rgbValues = None
 
@@ -84,6 +87,7 @@ class Palette:
         return None
 
     def findColorFromHexCode(self, hexCode: str) -> PaletteColor | None:
+        hexCode = hexCode.upper()  # Hex code may be lowercase
         for paletteColor in self.__colors.values():
             if paletteColor.hex == hexCode:
                 return paletteColor

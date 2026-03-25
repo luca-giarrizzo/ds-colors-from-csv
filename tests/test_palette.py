@@ -13,13 +13,13 @@ class TestPaletteColor:
     TEST_HEX: str = "#7ca38f"
 
     def test_palette_color_from_rgb(self):
-        color = PaletteColor(rgbValues=TestPaletteColor.TEST_RGB_VALUE)
-        assert color.rgbValues == TestPaletteColor.TEST_RGB_VALUE
+        color = PaletteColor(rgbValues=self.TEST_RGB_VALUE)
+        assert color.rgbValues == self.TEST_RGB_VALUE
 
 
     def test_palette_color_from_hex(self):
-        color = PaletteColor(hexCode=TestPaletteColor.TEST_HEX)
-        assert color.hex == TestPaletteColor.TEST_HEX.upper()
+        color = PaletteColor(hexCode=self.TEST_HEX)
+        assert color.hex == self.TEST_HEX.upper()
 
 
     def test_palette_color_name_from_user(self):
@@ -29,17 +29,17 @@ class TestPaletteColor:
 
 
     def test_palette_color_name_from_hex(self):
-        color = PaletteColor(hexCode=TestPaletteColor.TEST_HEX)
-        assert color.name == TestPaletteColor.TEST_HEX.upper()
+        color = PaletteColor(hexCode=self.TEST_HEX)
+        assert color.name == self.TEST_HEX.upper()
 
 
     def test_palette_color_channels_from_rgb(self):
-        color = PaletteColor(rgbValues=TestPaletteColor.TEST_RGB_VALUE)
-        assert (color.r, color.g, color.b) == TestPaletteColor.TEST_RGB_VALUE
+        color = PaletteColor(rgbValues=self.TEST_RGB_VALUE)
+        assert (color.r, color.g, color.b) == self.TEST_RGB_VALUE
 
 
     def test_palette_color_to_float(self):
-        color = PaletteColor(rgbValues=TestPaletteColor.TEST_RGB_VALUE)
+        color = PaletteColor(rgbValues=self.TEST_RGB_VALUE)
         assert color.toFloat() == (color.r / 255, color.g / 255, color.b / 255)
 
 
@@ -55,62 +55,62 @@ class TestPalette:
     ]
 
     def test_palette_get_colors(self):
-        palette = Palette("My test palette", TestPalette.TEST_PALETTE_COLORS)
-        assert palette.getColors() == {color.name: color for color in TestPalette.TEST_PALETTE_COLORS}
+        palette = Palette("My test palette", self.TEST_PALETTE_COLORS)
+        assert palette.colors == {color.name: color for color in self.TEST_PALETTE_COLORS}
 
     def test_palette_add_color(self):
         palette = Palette("My test palette")
-        palette.add(TestPalette.TEST_PALETTE_COLOR)
-        assert palette.getColors() == {TestPalette.TEST_PALETTE_COLOR.name: TestPalette.TEST_PALETTE_COLOR}
+        palette.add(self.TEST_PALETTE_COLOR)
+        assert palette.colors == {self.TEST_PALETTE_COLOR.name: self.TEST_PALETTE_COLOR}
 
     def test_palette_get_color(self):
-        palette = Palette("My test palette", TestPalette.TEST_PALETTE_COLORS)
+        palette = Palette("My test palette", self.TEST_PALETTE_COLORS)
         assert palette.getColor("Orange").rgbValues == (255, 128, 0)
 
     def test_palette_get_names(self):
-        palette = Palette("My test palette", TestPalette.TEST_PALETTE_COLORS)
-        assert palette.getNames() == set([color.name for color in TestPalette.TEST_PALETTE_COLORS])
+        palette = Palette("My test palette", self.TEST_PALETTE_COLORS)
+        assert palette.names == set([color.name for color in self.TEST_PALETTE_COLORS])
 
     def test_palette_get_rgb_values(self):
-        palette = Palette("My test palette", TestPalette.TEST_PALETTE_COLORS)
-        assert palette.getRGBValues() == set([color.rgbValues for color in TestPalette.TEST_PALETTE_COLORS])
+        palette = Palette("My test palette", self.TEST_PALETTE_COLORS)
+        assert palette.rgbValues == set([color.rgbValues for color in self.TEST_PALETTE_COLORS])
 
     def test_palette_get_hexcodes(self):
-        palette = Palette("My test palette", TestPalette.TEST_PALETTE_COLORS)
-        assert palette.getHexCodes() == set([color.hex for color in TestPalette.TEST_PALETTE_COLORS])
+        palette = Palette("My test palette", self.TEST_PALETTE_COLORS)
+        assert palette.hexCodes == set([color.hex for color in self.TEST_PALETTE_COLORS])
 
     def test_palette_find_color_from_rgb(self):
-        palette = Palette("My test palette", TestPalette.TEST_PALETTE_COLORS)
+        palette = Palette("My test palette", self.TEST_PALETTE_COLORS)
         assert palette.findColorFromRGB((128, 0, 255)).name == "Purple"
 
     def test_palette_find_color_from_hex(self):
-        palette = Palette("My test palette", TestPalette.TEST_PALETTE_COLORS)
+        palette = Palette("My test palette", self.TEST_PALETTE_COLORS)
         assert palette.findColorFromHexCode("#ff00ff").name == "Magenta"
 
     def test_palette_length(self):
-        palette = Palette("My test palette", TestPalette.TEST_PALETTE_COLORS)
-        assert palette.length() == len(TestPalette.TEST_PALETTE_COLORS)
+        palette = Palette("My test palette", self.TEST_PALETTE_COLORS)
+        assert palette.length() == len(self.TEST_PALETTE_COLORS)
 
     def test_palette_clear(self):
-        palette = Palette("My test palette", TestPalette.TEST_PALETTE_COLORS)
+        palette = Palette("My test palette", self.TEST_PALETTE_COLORS)
         palette.clear()
         assert palette.length() == 0
 
     def test_palette_delete_color(self):
-        palette = Palette("My test palette", TestPalette.TEST_PALETTE_COLORS)
+        palette = Palette("My test palette", self.TEST_PALETTE_COLORS)
         palette.delete("Magenta")
-        assert not palette.getColor("Magenta") and palette.length() == len(TestPalette.TEST_PALETTE_COLORS) - 1
+        assert not palette.getColor("Magenta") and palette.length() == len(self.TEST_PALETTE_COLORS) - 1
 
     def test_palette_rename(self):
         newName = "Renamed"
-        palette = Palette("My test palette", TestPalette.TEST_PALETTE_COLORS)
+        palette = Palette("My test palette", self.TEST_PALETTE_COLORS)
         palette.rename(newName)
         assert palette.name == newName
 
     def test_palette_update(self):
-        palette = Palette("My test palette", TestPalette.TEST_PALETTE_COLORS)
-        palette.update("Magenta", TestPalette.TEST_PALETTE_COLOR)
-        assert palette.getColor("Magenta").rgbValues == TestPalette.TEST_PALETTE_COLOR.rgbValues
+        palette = Palette("My test palette", self.TEST_PALETTE_COLORS)
+        palette.update("Magenta", self.TEST_PALETTE_COLOR)
+        assert palette.getColor("Magenta").rgbValues == self.TEST_PALETTE_COLOR.rgbValues
 
 # ---
 

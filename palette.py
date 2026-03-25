@@ -16,45 +16,82 @@ class PaletteColor:
     def __init__(
         self, rgbValues: tuple[int, int, int] | None = None, hexCode: str | None = None, name: str | None = None):
 
-        self.rgbValues = rgbValues
-        self.hex = hexCode
-        self.name = name
+        self.__rgbValues = rgbValues
+        self.__hex = hexCode
+        self.__name = name
 
-        if self.rgbValues and self.hex:
+        if self.__rgbValues and self.__hex:
             getLogger().warning("Both RGB values and hex code provided. Hex code will be ignored.")
 
-        if self.rgbValues:
-            self.rgbValues = clampRGBValue(self.rgbValues)  # RGB Values are clamped to [0, 255] range.
-            self.hex = RGBToHex(self.rgbValues)
-        elif self.hex:
-            self.hex = self.hex.upper()  # Hex code may be lowercase
-            if validateHexCode(self.hex):
-                self.rgbValues = hexToRGB(self.hex)
+        if self.__rgbValues:
+            self.__rgbValues = clampRGBValue(self.__rgbValues)  # RGB Values are clamped to [0, 255] range.
+            self.__hex = RGBToHex(self.__rgbValues)
+        elif self.__hex:
+            self.__hex = self.__hex.upper()  # Hex code may be lowercase
+            if validateHexCode(self.__hex):
+                self.__rgbValues = hexToRGB(self.__hex)
             else:
-                getLogger().error(f"Invalid hex code: {self.hex}")
-                self.hex = None
-                self.rgbValues = None
+                getLogger().error(f"Invalid hex code: {self.__hex}")
+                self.__hex = None
+                self.__rgbValues = None
 
-        if self.rgbValues:
-            self.r, self.g, self.b = self.rgbValues
+        if self.__rgbValues:
+            self.r, self.g, self.b = self.__rgbValues
         else:
             self.r, self.g, self.b = None, None, None
 
         if name:
-            self.name = name
-        elif self.hex:
-            self.name = self.hex
+            self.__name = name
+        elif self.__hex:
+            self.__name = self.__hex
         else:
-            self.name = None
+            self.__name = None
+
+    # ---
+
+    @property
+    def rgbValues(self) -> tuple[int, int, int] | None:
+        return self.__rgbValues
+
+    @property
+    def hex(self) -> str:
+        return self.__hex
+
+    @property
+    def name(self) -> str:
+        return self.__name
+
+    #---
+
+    @rgbValues.setter
+    def rgbValues(self, rgbValues: tuple[int, int, int]):
+        self.__rgbValues = clampRGBValue(rgbValues)
+
+    @hex.setter
+    def hex(self, hexValue: str):
+        hexValue = hexValue.upper()
+        if validateHexCode(hexValue):
+            self.__hex = hexValue.upper()
+        else:
+            getLogger().error(f"Invalid hex code: {hexValue}")
+
+    @name.setter
+    def name(self, name: str):
+        if name:
+            self.__name = name
+        else:
+            getLogger().error("Name cannot be empty.")
+
+    # ---
 
     def toFloat(self) -> tuple[float, float, float] | None:
-        return self.r / 255.0, self.g / 255.0, self.b / 255.0 if self.rgbValues else None
+        return self.r / 255.0, self.g / 255.0, self.b / 255.0 if self.__rgbValues else None
 
     def colorToSDValueRGB(self) -> SDValueColorRGB | None:
-        return SDValueColorRGB.sNew(ColorRGB(*self.toFloat())) if self.rgbValues else None
+        return SDValueColorRGB.sNew(ColorRGB(*self.toFloat())) if self.__rgbValues else None
 
     def nameToSDValue(self) -> SDValueString | None:
-        return SDValueString.sNew(self.name) if self.name else None
+        return SDValueString.sNew(self.__name) if self.__name else None
 
 
 class Palette:
@@ -63,22 +100,28 @@ class Palette:
         self.name = name
         self.__colors = {paletteColor.name: paletteColor for paletteColor in paletteColors} if paletteColors else {}
 
-    # GET
+    # ---
 
-    def getColors(self) -> dict[str, PaletteColor]:
+    @property
+    def colors(self) -> dict[str, PaletteColor]:
         return self.__colors
+
+    @property
+    def names(self) -> set[str]:
+        return set(self.__colors.keys())
+
+    @property
+    def rgbValues(self) -> set[tuple[int, int, int]]:
+        return {color.rgbValues for color in self.__colors.values()}
+
+    @property
+    def hexCodes(self) -> set[str]:
+        return {color.hex for color in self.__colors.values()}
+
+    # ---
 
     def getColor(self, name: str) -> PaletteColor | None:
         return self.__colors.get(name)
-
-    def getNames(self) -> set[str]:
-        return set(self.__colors.keys())
-
-    def getRGBValues(self) -> set[tuple[int, int, int]]:
-        return {color.rgbValues for color in self.__colors.values()}
-
-    def getHexCodes(self) -> set[str]:
-        return {color.hex for color in self.__colors.values()}
 
     def findColorFromRGB(self, rgbValues: tuple[int, int, int]) -> PaletteColor | None:
         for paletteColor in self.__colors.values():
@@ -267,12 +310,12 @@ def extractColorsFromCSV(csvFilePath: str, csvOptions: dict[str, Any]) -> dict[s
 if "__main__" == __name__:
     color_01_rgb = (136, 202, 34)
     color_01 = PaletteColor(rgbValues=color_01_rgb)
-    print(f"TEST: {color_01.name} / Input: {color_01_rgb} / Output: {color_01.hex}")
+    print(f"TEST: {color_01.__name} / Input: {color_01_rgb} / Output: {color_01.__hex}")
 
     color_02_hex = "#a3ff4c"
     color_02 = PaletteColor(hexCode=color_02_hex)
-    print(f"TEST: {color_02.name} / Input: {color_02_hex} / Output: R {color_01.r}, G {color_02.g}, B {color_02.b}")
+    print(f"TEST: {color_02.__name} / Input: {color_02_hex} / Output: R {color_01.r}, G {color_02.g}, B {color_02.b}")
 
     color_03_rgb = (316, -27, 256)
     color_03 = PaletteColor(rgbValues=color_03_rgb, name="My out-of-range color")
-    print(f"TEST: {color_03.name} / Input: {color_03_rgb} / Output: {color_03.hex}")
+    print(f"TEST: {color_03.__name} / Input: {color_03_rgb} / Output: {color_03.__hex}")

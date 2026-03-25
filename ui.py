@@ -28,6 +28,7 @@ class PresetsFromCSVToolbar(QToolBar):
         self.package = self.graph.getPackage()
         self.packageDir, self.packageName = path.split(self.package.getFilePath())
         self.packageResourcesDir = path.join(self.packageDir, path.splitext(self.packageName)[0] + ".resources")
+        self.position: tuple[int, ...] = (0, 0)
 
         self.csvProcessor = CSVColorProcessor()
 
@@ -50,8 +51,8 @@ class PresetsFromCSVToolbar(QToolBar):
                 graph: SDSBSCompGraph, palette: Palette | None, graphInputIdentifier: str) -> None:
             if not palette:
                 getLogger().warning("No colors to generate presets from.")
-                return None
-            for colorName, color in palette.getColors().items():
+                return
+            for colorName, color in palette.colors.items():
                 getLogger().info("Generating presets for color: " + colorName)
                 preset = graph.newPreset(colorName)
                 preset.addInput(graphInputIdentifier, color.colorToSDValueRGB())
@@ -63,7 +64,7 @@ class PresetsFromCSVToolbar(QToolBar):
         palette: Palette | None = self.csvProcessor.loadPalette(csvFilePath)
 
         if palette:
-            getLogger().info(f"Found {palette.length()} colors: " + ", ".join(palette.getNames()))
+            getLogger().info(f"Found {palette.length()} colors: " + ", ".join(palette.names))
             getLogger().info("Creating presets...")
             generatePresetsFromColors(self.graph, palette, colorInputProp)
         else:
@@ -74,9 +75,9 @@ class PresetsFromCSVToolbar(QToolBar):
         palette: Palette | None = self.csvProcessor.loadPalette(csvFilePath)
 
         if palette:
-            getLogger().info(f"Found {palette.length()} colors: " + ", ".join(palette.getNames()))
+            getLogger().info(f"Found {palette.length()} colors: " + ", ".join(palette.names))
             getLogger().info("Creating palette bitmap...")
-            paletteImage = generatePaletteImageFromColors(list(palette.getRGBValues()))
+            paletteImage = generatePaletteImageFromColors(list(palette.rgbValues))
             paletteImageFilePath = path.join(
                 self.packageResourcesDir, self.presetsFromCSVDialog.csvResourceCombobox.currentText() + "_palette.png")
             paletteImage.save(paletteImageFilePath)

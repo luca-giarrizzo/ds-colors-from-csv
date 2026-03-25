@@ -129,14 +129,14 @@ class CSVColorProcessor:
 
     # ---
 
-    def getOption(self, identifier: str) -> Any | None:
+    def getOptionValueFromName(self, identifier: str) -> Any | None:
         if identifier in self.CSV_OPTIONS_DEFAULTS:
             return self.__options[identifier]
         else:
             getLogger().error(f"Option not found: {identifier}")
             return None
 
-    def setOption(self, identifier: str, value: Any) -> bool:
+    def setOptionValueFromName(self, identifier: str, value: Any) -> bool:
         if identifier in CSVColorProcessor.CSV_OPTIONS_DEFAULTS:
             if isinstance(value, self.CSV_OPTIONS_DEFAULTS[identifier].__class__):
                 self.__options[identifier] = value

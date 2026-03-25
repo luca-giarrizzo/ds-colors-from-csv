@@ -167,8 +167,8 @@ class CSVOptionsDialog(QDialog):
         colorValueFormat.addItem("Integer", userData=int)
 
         colorValueFormat.currentIndexChanged.connect(
-            lambda: self.csvProcessor.setOption("colorValueFormat", colorValueFormat.itemData(colorValueFormat.currentIndex())))
-        colorValueFormat.setCurrentIndex(colorValueFormat.findData(self.csvProcessor.getOption("colorValueFormat")))  # Initialise default value
+            lambda: self.csvProcessor.setOptionValueFromName("colorValueFormat", colorValueFormat.itemData(colorValueFormat.currentIndex())))
+        colorValueFormat.setCurrentIndex(colorValueFormat.findData(self.csvProcessor.colorValueFormat))  # Initialise default value
 
         colorValueFormatLayout.addWidget(colorValueFormatLabel)
         colorValueFormatLayout.addWidget(colorValueFormat)
@@ -181,8 +181,8 @@ class CSVOptionsDialog(QDialog):
         hasAlphaLabel = QtWidgets.QLabel(UIStr_hasAlphaLabel)
 
         hasAlpha = QtWidgets.QCheckBox()
-        hasAlpha.toggled.connect(lambda: self.csvProcessor.setOption("hasAlpha", hasAlpha.isChecked()))
-        hasAlpha.setChecked(self.csvProcessor.getOption("hasAlpha"))  # Initialise default value
+        hasAlpha.toggled.connect(lambda: self.csvProcessor.setOptionValueFromName("hasAlpha", hasAlpha.isChecked()))
+        hasAlpha.setChecked(self.csvProcessor.hasAlpha)  # Initialise default value
 
         hasAlphaLayout.addWidget(hasAlphaLabel)
         hasAlphaLayout.addWidget(hasAlpha)
@@ -195,9 +195,9 @@ class CSVOptionsDialog(QDialog):
         hasLabelLabel = QtWidgets.QLabel(UIStr_hasLabelLabel)
 
         hasLabel = QtWidgets.QCheckBox()
-        hasLabel.toggled.connect(lambda: self.csvProcessor.setOption("hasLabel", hasLabel.isChecked()))
+        hasLabel.toggled.connect(lambda: self.csvProcessor.setOptionValueFromName("hasLabel", hasLabel.isChecked()))
         hasLabel.toggled.connect(lambda: self.labelRowOption.setEnabled(hasLabel.isChecked()))
-        hasLabel.setChecked(self.csvProcessor.getOption("hasLabel"))
+        hasLabel.setChecked(self.csvProcessor.hasLabel)
 
         hasLabelLayout.addWidget(hasLabelLabel)
         hasLabelLayout.addWidget(hasLabel)
@@ -210,8 +210,8 @@ class CSVOptionsDialog(QDialog):
         hasHeaderLabel = QtWidgets.QLabel(UIStr_hasHeaderLabel)
 
         hasHeader = QtWidgets.QCheckBox()
-        hasHeader.toggled.connect(lambda: self.csvProcessor.setOption("hasHeader", hasHeader.isChecked()))
-        hasHeader.setChecked(self.csvProcessor.getOption("hasHeader"))  # Initialise default value
+        hasHeader.toggled.connect(lambda: self.csvProcessor.setOptionValueFromName("hasHeader", hasHeader.isChecked()))
+        hasHeader.setChecked(self.csvProcessor.hasHeader)  # Initialise default value
 
         hasHeaderLayout.addWidget(hasHeaderLabel)
         hasHeaderLayout.addWidget(hasHeader)
@@ -242,8 +242,8 @@ class CSVOptionsDialog(QDialog):
         csvDialect.addItem("Unix", userData="unix")
 
         csvDialect.currentIndexChanged.connect(
-            lambda: self.csvProcessor.setOption("csvDialect", csvDialect.itemData(csvDialect.currentIndex())))
-        csvDialect.setCurrentIndex(csvDialect.findData(self.csvProcessor.getOption("csvDialect")))  # Initialise default value
+            lambda: self.csvProcessor.setOptionValueFromName("csvDialect", csvDialect.itemData(csvDialect.currentIndex())))
+        csvDialect.setCurrentIndex(csvDialect.findData(self.csvProcessor.csvDialect))  # Initialise default value
 
         csvDialectLayout.addWidget(csvDialectLabel)
         csvDialectLayout.addWidget(csvDialect)
@@ -269,27 +269,27 @@ class CSVOptionsDialog(QDialog):
         self.csvProcessor.resetAllOptions()
 
         self.csvDialectOption.setCurrentIndex(self.csvDialectOption.findData(
-            self.csvProcessor.getOption("csvDialect")))
+            self.csvProcessor.csvDialect))
         self.hasLabelOption.setChecked(
-            self.csvProcessor.getOption("hasLabel"))
+            self.csvProcessor.hasLabel)
         self.labelRowOption.setValue(
-            self.csvProcessor.getOption("labelRow"))
+            self.csvProcessor.labelRow)
         self.colorRowOption.setValue(
-            self.csvProcessor.getOption("colorRow"))
+            self.csvProcessor.colorRow)
         self.colorSeparatorOption.setText(
-            self.csvProcessor.getOption("colorSeparator"))
+            self.csvProcessor.colorSeparator)
         self.colorValueFormatOption.setCurrentIndex(self.colorValueFormatOption.findData(
-            self.csvProcessor.getOption("colorValueFormat")))
+            self.csvProcessor.colorValueFormat))
         self.hasHeaderOption.setChecked(
-            self.csvProcessor.getOption("hasHeader"))
+            self.csvProcessor.hasHeader)
         self.hasAlphaOption.setChecked(
-            self.csvProcessor.getOption("hasAlpha"))
+            self.csvProcessor.hasAlpha)
 
         getLogger().info("CSV options have been reset.")
         self.csvProcessor.logCurrentOptions()
 
     def updateOptions(self, key: str, value: Any) -> None:
-        self.csvProcessor.setOption(key, value)
+        self.csvProcessor.setOptionValueFromName(key, value)
         getLogger().info(f"Updated option {key}: {value}")
         self.csvProcessor.logCurrentOptions()
 
@@ -304,13 +304,13 @@ class OptionTextEdit(QtWidgets.QTextEdit):
         self.optionsDialog = optionsDialog
         self.optionIdentifier = optionIdentifier
 
-        self.setText(optionsDialog.csvProcessor.getOption(optionIdentifier))  # Initialise value
+        self.setText(optionsDialog.csvProcessor.getOptionValueFromName(optionIdentifier))  # Initialise value
 
     def focusOutEvent(self, e):
         # TODO Add visual feedback for invalid input (e.g. red border) without losing focus
         plainText = self.toPlainText()
         if plainText:
-            self.optionsDialog.csvProcessor.setOption(self.optionIdentifier, plainText)
+            self.optionsDialog.csvProcessor.setOptionValueFromName(self.optionIdentifier, plainText)
         else:  # Set option value to default if text is empty
             self.optionsDialog.csvProcessor.resetOption(self.optionIdentifier)
         super().focusOutEvent(e)
@@ -332,10 +332,10 @@ class RowSpinBox(QtWidgets.QSpinBox):
         self.presetDialog = optionsDialog
         self.optionIdentifier = optionIdentifier
 
-        self.setValue(optionsDialog.csvProcessor.getOption(optionIdentifier))  # Initialise default value
+        self.setValue(optionsDialog.csvProcessor.getOptionValueFromName(optionIdentifier))  # Initialise default value
 
     def focusOutEvent(self, e):
-        self.presetDialog.csvProcessor.setOption(self.optionIdentifier, self.value())
+        self.presetDialog.csvProcessor.setOptionValueFromName(self.optionIdentifier, self.value())
         super().focusOutEvent(e)
 
 

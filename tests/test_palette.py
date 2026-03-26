@@ -42,6 +42,15 @@ class TestPaletteColor:
         color = PaletteColor(rgbValues=self.TEST_RGB_VALUE)
         assert color.toFloat() == (color.r / 255, color.g / 255, color.b / 255)
 
+    def test_palette_color_from_luminance(self):
+        color = PaletteColor.sNewFromLuminance(38)
+        assert color.rgbValues == (38, 38, 38) and color.hex == "#262626" and color.name == "#262626"
+
+    def test_palette_color_from_rgba(self):
+        color = PaletteColor.sNewFromRGBA((87, 231, 12, 90))
+        assert color.rgbValues == (87, 231, 12) and color.hex == "#57E70C" and color.name == "#57E70C"
+
+# ---
 
 class TestPalette:
 

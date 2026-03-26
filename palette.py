@@ -90,6 +90,9 @@ class PaletteColor:
     def colorToSDValueRGB(self) -> SDValueColorRGB | None:
         return SDValueColorRGB.sNew(ColorRGB(*self.toFloat())) if self.__rgbValues else None
 
+    def colorToSDValueRGBA(self) -> SDValueColorRGB | None:
+        return SDValueColorRGBA.sNew(ColorRGBA(*self.toFloat(), 1.0)) if self.__rgbValues else None
+
     def nameToSDValue(self) -> SDValueString | None:
         return SDValueString.sNew(self.__name) if self.__name else None
 

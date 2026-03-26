@@ -155,6 +155,8 @@ class PaletteColor:
 
 class Palette:
 
+    SUPPORTED_COLOR_MODES: set[str] = {"RGB", "RGBA", "L"}
+
     def __init__(self, name: str, paletteColors: list[PaletteColor] | None = None):
         self.name = name
         self.__colors = {paletteColor.name: paletteColor for paletteColor in paletteColors} if paletteColors else {}

@@ -31,31 +31,26 @@ def test_csv_processing_save():
     result = csvColorProcessor.savePalette(testPalette, TEST_ASSETS_PATHS[sys.platform])
     assert result
 
-
 def test_csv_processing_load():
     csvColorProcessor = CSVColorProcessor()
     palette = csvColorProcessor.loadPalette(TEST_ASSETS_PATHS[sys.platform])
     assert palette.rgbValues == TEST_RGB_VALUES
-
 
 def test_csv_processing_set_get_options():
     csvColorProcessor = CSVColorProcessor()
     csvColorProcessor.labelRow = 3
     assert csvColorProcessor.labelRow == 3
 
-
 def test_csv_processing_set_option_type_check():
     csvColorProcessor = CSVColorProcessor()
     csvColorProcessor.labelRow = "4"
     assert csvColorProcessor.labelRow != 4
-
 
 def test_csv_processing_reset_option():
     csvColorProcessor = CSVColorProcessor()
     csvColorProcessor.labelRow = 3
     csvColorProcessor.resetOption("labelRow")
     assert csvColorProcessor.labelRow == CSVColorProcessor.CSV_OPTIONS_DEFAULTS["labelRow"]
-
 
 def test_csv_processing_reset_all_options():
     csvColorProcessor = CSVColorProcessor()

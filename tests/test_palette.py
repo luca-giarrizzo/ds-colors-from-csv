@@ -12,31 +12,31 @@ class TestPaletteColor:
     TEST_RGB_VALUE: tuple[int, int, int] = (37, 168, 202)
     TEST_HEX: str = "#7ca38f"
 
+    def test_palette_to_string(self):
+        palette = PaletteColor(rgbValues=self.TEST_RGB_VALUE)
+        palette.name = "My test color"
+        assert str(palette) == "Color 'My test color'- (37, 168, 202) - #25A8CA"
+
     def test_palette_color_from_rgb(self):
         color = PaletteColor(rgbValues=self.TEST_RGB_VALUE)
         assert color.rgbValues == self.TEST_RGB_VALUE
 
-
     def test_palette_color_from_hex(self):
         color = PaletteColor(hexCode=self.TEST_HEX)
         assert color.hex == self.TEST_HEX.upper()
-
 
     def test_palette_color_name_from_user(self):
         colorName = "My test color"
         color = PaletteColor(name=colorName)
         assert color.name == colorName
 
-
     def test_palette_color_name_from_hex(self):
         color = PaletteColor(hexCode=self.TEST_HEX)
         assert color.name == self.TEST_HEX.upper()
 
-
     def test_palette_color_channels_from_rgb(self):
         color = PaletteColor(rgbValues=self.TEST_RGB_VALUE)
         assert (color.r, color.g, color.b) == self.TEST_RGB_VALUE
-
 
     def test_palette_color_to_float(self):
         color = PaletteColor(rgbValues=self.TEST_RGB_VALUE)
@@ -53,6 +53,10 @@ class TestPalette:
         PaletteColor(rgbValues=(128, 0, 255), name="Purple"),
         PaletteColor(rgbValues=(128, 255, 0), name="Green")
     ]
+
+    def test_palette_to_string(self):
+        palette = Palette("My test palette", self.TEST_PALETTE_COLORS)
+        assert str(palette) == "Palette 'My test palette' - 5 colors."
 
     def test_palette_get_colors(self):
         palette = Palette("My test palette", self.TEST_PALETTE_COLORS)

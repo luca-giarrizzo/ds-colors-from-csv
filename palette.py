@@ -1,5 +1,5 @@
-from sd.api import SDValueColorRGB
-from sd.api.sdbasetypes import ColorRGB
+from sd.api import SDValueColorRGB, SDValueColorRGBA, SDValueFloat
+from sd.api.sdbasetypes import ColorRGB, ColorRGBA
 from sd.api.sdvaluestring import SDValueString
 
 import csv
@@ -95,6 +95,57 @@ class PaletteColor:
 
     def nameToSDValue(self) -> SDValueString | None:
         return SDValueString.sNew(self.__name) if self.__name else None
+
+    # ---
+
+    @classmethod
+    def sNewFromSDValueRGB(cls, sdValueRGB: SDValueColorRGB | None):
+        if sdValueRGB and isinstance(sdValueRGB, SDValueColorRGB):
+            r, g, b = sdValueRGB.get()
+            r, g, b = int(r * 255), int(g * 255), int(b * 255)
+            return cls(rgbValues=(r, g, b))
+        else:
+            getLogger().warning(f"Invalid SDValueRGB: {sdValueRGB}")
+            return None
+
+    @classmethod
+    def sNewFromLuminance(cls, luminance: int | None):
+        if luminance:
+            luminance = max(0, min(255, luminance))  # Clamp to [0, 255]
+            return cls(rgbValues=(luminance, luminance, luminance))
+        else:
+            getLogger().warning(f"Invalid luminance value: {luminance}")
+            return None
+
+    @classmethod
+    def sNewFromRGBA(cls, rgba: tuple[int, int, int, int] | None):
+        if rgba:
+            rgb = rgba[:3]
+            rgb = cast(tuple[int, int, int], rgb)
+            return cls(rgbValues=rgb)
+        else:
+            getLogger().warning(f"Invalid RGBA value: {rgba}")
+            return None
+
+    @classmethod
+    def sNewFromSDValueRGBA(cls, sdValueRGBA: SDValueColorRGBA | None):
+        if sdValueRGBA and isinstance(sdValueRGBA, SDValueColorRGBA):
+            r, g, b, a = sdValueRGBA.get()
+            del a
+            r, g, b = int(r * 255), int(g * 255), int(b * 255)
+            return cls(rgbValues=(r, g, b))
+        else:
+            getLogger().warning(f"Invalid SDValueRGBA: {sdValueRGBA}")
+            return None
+
+    @classmethod
+    def sNewFromSDValueFloat(cls, sdValueFloat: SDValueFloat | None) -> object:
+        if sdValueFloat and isinstance(sdValueFloat, SDValueFloat):
+            l = int(sdValueFloat.get() * 255)
+            return cls(rgbValues=(l, l, l))
+        else:
+            getLogger().warning(f"Invalid SDValueFloat: {sdValueFloat}")
+            return None
 
     # ---
 

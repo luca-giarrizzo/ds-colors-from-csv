@@ -93,6 +93,11 @@ class PaletteColor:
     def nameToSDValue(self) -> SDValueString | None:
         return SDValueString.sNew(self.__name) if self.__name else None
 
+    # ---
+
+    def __str__(self):
+        return f"Color '{self.name}'- {self.rgbValues} - {self.hex}"
+
 
 class Palette:
 
@@ -167,6 +172,11 @@ class Palette:
 
     def clear(self):
         self.__colors.clear()
+
+    # ---
+
+    def __str__(self):
+        return f"Palette '{self.name}' - {self.length()} colors."
 
 # ---
 

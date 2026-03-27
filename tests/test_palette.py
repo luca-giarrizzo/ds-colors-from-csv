@@ -1,9 +1,13 @@
 import sys
 import pytest
-
 sys.path.append("/Users/giarrizz/Library/Application Support/Steam/steamapps/common/Substance 3D Designer 2026/Adobe Substance 3D Designer.app/Contents/Resources/python")
-import sd
+from os import path
 from palette import Palette, PaletteColor
+from csv_processing import CSVColorProcessor
+
+# ---
+
+TEST_RESOURCES_DIR = path.join(path.dirname(__file__), "test_resources")
 
 # ---
 
@@ -124,6 +128,15 @@ class TestPalette:
         palette = Palette("My test palette", self.TEST_PALETTE_COLORS)
         palette.update("Magenta", self.TEST_PALETTE_COLOR)
         assert palette.getColor("Magenta").rgbValues == self.TEST_PALETTE_COLOR.rgbValues
+
+    def test_palette_from_bitmap(self):
+        palette = Palette.sNewFromBitmap(path.join(TEST_RESOURCES_DIR, "ral_classic_palette.png"))
+        assert palette.name == "ral_classic_palette" and palette.length() == 216 and palette.findColorFromHexCode("#BF3922")
+
+    def test_palette_from_csv(self):
+        csvColorProcessor = CSVColorProcessor()
+        palette = Palette.sNewFromCSV(path.join(TEST_RESOURCES_DIR, "ral_classic.csv"), csvColorProcessor)
+        assert palette.name == "ral_classic" and palette.length() == 216 and palette.getColor("RAL 2002").hex == "#BF3922"
 
 # ---
 

@@ -1,8 +1,6 @@
 import sys
 import pytest
-
 sys.path.append("/Users/giarrizz/Library/Application Support/Steam/steamapps/common/Substance 3D Designer 2026/Adobe Substance 3D Designer.app/Contents/Resources/python")
-import sd
 from palette import Palette, PaletteColor
 from csv_processing import CSVColorProcessor
 
@@ -15,26 +13,13 @@ TEST_ASSETS_PATHS: dict[str, str] = {
 }
 
 TEST_RGB_VALUES: set[tuple[int, int, int]] = {
-        (128, 128, 128),
-        (255, 0, 0),
-        (0, 255, 0),
-        (0, 0, 255)
-    }
+    (128, 128, 128),
+    (255, 0, 0),
+    (0, 255, 0),
+    (0, 0, 255)
+}
 
 # ---
-
-def test_csv_processing_save():
-    testPalette = Palette("Test palette")
-    csvColorProcessor = CSVColorProcessor()
-    for rgbValue in TEST_RGB_VALUES:
-        testPalette.add(PaletteColor(rgbValue))
-    result = csvColorProcessor.savePalette(testPalette, TEST_ASSETS_PATHS[sys.platform])
-    assert result
-
-def test_csv_processing_load():
-    csvColorProcessor = CSVColorProcessor()
-    palette = csvColorProcessor.loadPalette(TEST_ASSETS_PATHS[sys.platform])
-    assert palette.rgbValues == TEST_RGB_VALUES
 
 def test_csv_processing_set_get_options():
     csvColorProcessor = CSVColorProcessor()

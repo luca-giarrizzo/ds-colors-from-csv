@@ -1,11 +1,9 @@
-from os import path
-from PIL import Image
 from sd.api import SDValueColorRGBA, SDValueFloat
 
 from sd.api.sbs.sdsbscompnode import SDSBSCompNode
 from sd.api.sbs.sdsbscompgraph import SDSBSCompGraph
 
-from palette import Palette, PaletteColor
+from palette import PaletteColor
 from utilities import getLogger
 
 from typing import cast
@@ -49,38 +47,3 @@ def paletteColorsToUniformColorNodes(
         node.setInputPropertyValueFromId("outputcolor", paletteColor.colorToSDValueRGBA())
         uniformColorNodes.append(node)
     return uniformColorNodes
-
-
-def paletteToBitmap(palette: Palette, outputDir: str, size: tuple[int, int] = (256, 1)) -> str | None:
-    if path.isdir(outputDir):
-        outputPath = path.join(outputDir, palette.name + ".png")
-    else:
-        getLogger().error(f"Output directory does not exist: {outputDir}")
-        return None
-    if palette.length() == 0:
-        getLogger().warning(f"Cannot save image: Palette '{palette.name}' is empty.")
-        return None
-    paletteImage = Image.new("RGB", size)
-    paletteImage.putdata(list(palette.rgbValues))
-    try:
-        paletteImage.save(outputPath)
-        return outputPath
-    except Exception as e:
-        getLogger().error(f"Failed to save image: {e}")
-        return None
-
-# TODO Move this to Palette class as a static method?
-def bitmapToPalette(bitmapPath: str) -> Palette | None:
-    image = Image.open(bitmapPath)
-    if image.mode not in Palette.SUPPORTED_COLOR_MODES:
-        getLogger().warning(f"Unsupported color mode: '{image.mode}'. Cannot create palette.")
-        return None
-    pixelValues = list(image.get_flattened_data())
-    palette = Palette(name=path.splitext(path.basename(bitmapPath))[0])
-    for value in pixelValues:
-        if image.mode == "RGBA":
-            value = cast(tuple[int, int, int, int], value)
-            palette.add(PaletteColor.sNewFromRGBA(value))
-        elif image.mode == "L":
-            palette.add(PaletteColor.sNewFromLuminance(value[0]))
-    return palette

@@ -3,8 +3,11 @@ from sd.api.sdbasetypes import ColorRGB, ColorRGBA
 from sd.api.sdvaluestring import SDValueString
 
 import csv
+from PIL import Image
+from os import path
 from typing import Any, cast
 
+from csv_processing import CSVColorProcessor
 from utilities import getLogger
 
 # ---
@@ -181,6 +184,93 @@ class Palette:
 
     # ---
 
+    @classmethod
+    def sNewFromBitmap(cls, bitmapPath: str):
+        image = Image.open(bitmapPath)
+        if image.mode not in Palette.SUPPORTED_COLOR_MODES:
+            getLogger().warning(f"Unsupported color mode: '{image.mode}'. Cannot create palette.")
+            return None
+        pixelValues = list(image.get_flattened_data())
+        palette = cls(name=path.splitext(path.basename(bitmapPath))[0])
+        for value in pixelValues:
+            if image.mode == "RGBA":
+                value = cast(tuple[int, int, int, int], value)
+                if value != (0, 0, 0, 0) and value != (0, 0, 0, 1):
+                    palette.add(PaletteColor.sNewFromRGBA(value))
+            elif image.mode == "RGB":
+                value = cast(tuple[int, int, int], value)
+                if value != (0, 0, 0):
+                    palette.add(PaletteColor(rgbValues=value))
+            elif image.mode == "L":
+                if value != 0:
+                    palette.add(PaletteColor.sNewFromLuminance(value[0]))
+        return palette
+
+    @classmethod
+    def sNewFromCSV(cls, csvFilePath: str, csvProcessor: CSVColorProcessor):
+        # TODO Support RGBA, luminance
+        try:
+            with open(csvFilePath, "r", encoding="utf-8", newline="") as csvFile:
+                csvReader = csv.reader(csvFile, delimiter=",", dialect=csvProcessor.csvDialect)
+                csvValues = [row for row in csvReader]
+        except Exception as e:
+            getLogger().error("ERROR:" + str(e))
+            return None
+
+        palette = cls(name=path.splitext(path.basename(csvFilePath))[0])
+
+        if csvProcessor.hasHeader:
+            csvValues = csvValues[1:]  # Skip header row
+
+        for index, row in enumerate(csvValues):
+
+            if isinstance(csvProcessor.colorRow, int):
+                colorColumns = [csvProcessor.colorRow]
+            elif isinstance(csvProcessor.colorRow, str):
+                if "," in csvProcessor.colorRow:
+                    colorColumnsStr = csvProcessor.colorRow.split(",")
+                    for c in colorColumnsStr:
+                        if not c.isdigit():
+                            getLogger().error(f"Item '{c}' in column indexes '{colorColumnsStr}' is not a digit.")
+                            return None
+                    colorColumns = [int(c) for c in colorColumnsStr]
+                    if len(colorColumns) != 3:
+                        getLogger().error(f"Amount of color column indexes should be 3.")
+                        return None
+                elif csvProcessor.colorRow.isdigit():
+                    colorColumns = [int(csvProcessor.colorRow)]
+                else:
+                    getLogger().error(f"Row index '{csvProcessor.colorRow}' is not a digit.")
+                    return None
+            else:
+                getLogger().error(f"Invalid color row: {csvProcessor.colorRow}")
+                return None
+
+            for columnIndex in colorColumns:
+                if columnIndex >= len(row):
+                    getLogger().error(f"Row index {columnIndex} is out of range for CSV row with length {len(row)}.")
+                    return None
+            if len(colorColumns) == 1:
+                rgbValues = tuple([int(v) for v in row[colorColumns[0]].split(csvProcessor.colorSeparator)])
+            else:
+                rgbValues = tuple([int(row[columnIndex]) for columnIndex in colorColumns])
+
+            rgbValues = cast(tuple[int, int, int], rgbValues)
+            paletteColor = PaletteColor(rgbValues=rgbValues)
+
+            if csvProcessor.hasLabel:
+                if csvProcessor.labelRow < len(csvValues):
+                    paletteColor.name = row[csvProcessor.labelRow]
+                else:
+                    getLogger().error(
+                        f"Label row index '{csvProcessor.labelRow}' is out of range for CSV row with length {len(row)}.")
+
+            palette.add(paletteColor)
+
+        return palette
+
+    # ---
+
     def getColor(self, name: str) -> PaletteColor | None:
         return self.__colors.get(name)
 
@@ -199,6 +289,45 @@ class Palette:
 
     def length(self) -> int:
         return len(self.__colors)
+
+    def toBitmap(self, outputDir: str, size: tuple[int, int] = (256, 1)) -> str | None:
+        if path.isdir(outputDir):
+            outputPath = path.join(outputDir, self.name + ".png")
+        else:
+            getLogger().error(f"Output directory does not exist: {outputDir}")
+            return None
+        if self.length() == 0:
+            getLogger().warning(f"Cannot save image: Palette '{self.name}' is empty.")
+            return None
+        paletteImage = Image.new("RGB", size)
+        paletteImage.putdata(list(self.rgbValues))
+        try:
+            paletteImage.save(outputPath)
+            return outputPath
+        except Exception as e:
+            getLogger().error(f"Failed to save image: {e}")
+            return None
+
+    def toCSV(self, csvFilepath: str, csvProcessor: CSVColorProcessor) -> bool:
+        if not path.isdir(path.split(csvFilepath)[0]) and path.splitext(csvFilepath)[1] == ".csv":
+            getLogger().error(f"Invalid target filepath: {csvFilepath}")
+            return False
+
+        try:
+            getLogger().info(f"Writing file at: {csvFilepath}")
+            with open(csvFilepath, "w+", encoding="utf-8", newline="") as csvFile:
+                csvWriter = csv.writer(csvFile, delimiter=",", dialect=csvProcessor.csvDialect)
+                if csvProcessor.hasHeader:
+                    csvWriter.writerow(["NAME", "RGB", "HEX"])
+                    getLogger().info("Header written.")
+                for colorName, color in self.colors.items():
+                    csvWriter.writerow([colorName, csvProcessor.colorSeparator.join([str(v) for v in color.rgbValues]), color.hex])
+                    getLogger().info(f"Color written: {colorName}")
+                getLogger().info("Done.")
+            return True
+        except Exception as e:
+            getLogger().error(f"Could not create CSV file and start CSV writer: {e}")
+            return False
 
     # EDIT
 

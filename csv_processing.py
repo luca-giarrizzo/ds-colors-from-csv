@@ -20,7 +20,7 @@ class CSVColorProcessor:
     }
 
     def __init__(self):
-        self.__options: dict[str, Any] = self.CSV_OPTIONS_DEFAULTS
+        self.__options: dict[str, Any] = {key: value for key, value in CSVColorProcessor.CSV_OPTIONS_DEFAULTS.items()}
 
     @property
     def csvDialect(self) -> str:
@@ -35,7 +35,7 @@ class CSVColorProcessor:
         return self.__options["labelRow"]
 
     @property
-    def colorRow(self) -> int:
+    def colorRow(self) -> int | str:
         return self.__options["colorRow"]
 
     @property
@@ -127,7 +127,7 @@ class CSVColorProcessor:
     # ---
 
     def getOptionValueFromName(self, identifier: str) -> Any | None:
-        if identifier in self.CSV_OPTIONS_DEFAULTS:
+        if identifier in CSVColorProcessor.CSV_OPTIONS_DEFAULTS:
             return self.__options[identifier]
         else:
             getLogger().error(f"Option not found: {identifier}")
@@ -135,28 +135,29 @@ class CSVColorProcessor:
 
     def setOptionValueFromName(self, identifier: str, value: Any) -> bool:
         if identifier in CSVColorProcessor.CSV_OPTIONS_DEFAULTS:
-            if isinstance(value, self.CSV_OPTIONS_DEFAULTS[identifier].__class__):
+            if isinstance(value, CSVColorProcessor.CSV_OPTIONS_DEFAULTS[identifier].__class__):
                 self.__options[identifier] = value
                 return True
             else:
                 getLogger().error(
                     f"Value is of wrong type: {value.__class__} \
-                    (Expected: {self.CSV_OPTIONS_DEFAULTS[identifier].__class__})")
+                    (Expected: {CSVColorProcessor.CSV_OPTIONS_DEFAULTS[identifier].__class__})")
                 return False
         else:
             getLogger().error(f"Option not found: {identifier}")
             return False
 
     def resetOption(self, identifier: str) -> bool:
-        if identifier in self.CSV_OPTIONS_DEFAULTS:
-            self.__options[identifier] = self.CSV_OPTIONS_DEFAULTS[identifier]
+        if identifier in CSVColorProcessor.CSV_OPTIONS_DEFAULTS:
+            self.__options[identifier] = CSVColorProcessor.CSV_OPTIONS_DEFAULTS[identifier]
             return True
         else:
             getLogger().error(f"Option not found: {identifier}")
             return False
 
     def resetAllOptions(self) -> None:
-        self.__options = {key: value for key, value in self.CSV_OPTIONS_DEFAULTS.items()}
+        self.__options.clear()
+        self.__options = {key: value for key, value in CSVColorProcessor.CSV_OPTIONS_DEFAULTS.items()}
 
     def logCurrentOptions(self):
         optionsPrettyPrint = "\n".join(

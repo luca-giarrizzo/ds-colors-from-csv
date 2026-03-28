@@ -1,6 +1,4 @@
-import sys
 import pytest
-from palette import Palette, PaletteColor
 from csv_processing import CSVColorProcessor
 
 # ---

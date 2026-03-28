@@ -1,4 +1,3 @@
-import sys
 import pytest
 from os import path
 from palette import Palette, PaletteColor

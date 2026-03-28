@@ -1,6 +1,5 @@
 import sys
 import pytest
-sys.path.append("/Users/giarrizz/Library/Application Support/Steam/steamapps/common/Substance 3D Designer 2026/Adobe Substance 3D Designer.app/Contents/Resources/python")
 from palette import Palette, PaletteColor
 from csv_processing import CSVColorProcessor
 

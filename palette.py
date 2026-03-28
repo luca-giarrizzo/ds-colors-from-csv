@@ -499,18 +499,3 @@ def extractColorsFromCSV(csvFilePath: str, csvOptions: dict[str, Any]) -> dict[s
         colors[label] = PaletteColor(rgbValues=colorValues, name=label)
 
     return colors
-
-# ---
-
-if "__main__" == __name__:
-    color_01_rgb = (136, 202, 34)
-    color_01 = PaletteColor(rgbValues=color_01_rgb)
-    print(f"TEST: {color_01.__name} / Input: {color_01_rgb} / Output: {color_01.__hex}")
-
-    color_02_hex = "#a3ff4c"
-    color_02 = PaletteColor(hexCode=color_02_hex)
-    print(f"TEST: {color_02.__name} / Input: {color_02_hex} / Output: R {color_01.r}, G {color_02.g}, B {color_02.b}")
-
-    color_03_rgb = (316, -27, 256)
-    color_03 = PaletteColor(rgbValues=color_03_rgb, name="My out-of-range color")
-    print(f"TEST: {color_03.__name} / Input: {color_03_rgb} / Output: {color_03.__hex}")
